@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIY HUP AI — Build Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;--bg4:#22222e;
+  --text:#e8e8ef;--text2:#9a9ab0;--text3:#66667a;
+  --cyan:#00f0ff;--cyan2:#00c8d6;--cyan-glow:rgba(0,240,255,.15);
+  --green:#00ff9d;--green-glow:rgba(0,255,157,.12);
+  --orange:#ff6b35;--orange-glow:rgba(255,107,53,.12);
+  --purple:#a855f7;--purple-glow:rgba(168,85,247,.1);
+  --red:#ff4757;
+  --border:#2a2a3a;--border2:#3a3a4f;
+  --font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+  --radius:12px;--radius-sm:8px;
+}
+html{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--border2) var(--bg)}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+::selection{background:var(--cyan);color:var(--bg)}
+
+/* ── Noise overlay ── */
+body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-repeat:repeat;opacity:.4}
+
+/* ── Scroll progress ── */
+#progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--green));z-index:10000;transition:width .15s ease-out;width:0}
+
+/* ── Navigation ── */
+nav{position:fixed;left:0;top:0;bottom:0;width:280px;background:var(--bg2);border-right:1px solid var(--border);
+  z-index:100;overflow-y:auto;padding:24px 0;transition:transform .3s cubic-bezier(.4,0,.2,1);scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav .logo{padding:0 24px 24px;font-size:14px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);
+  display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+nav .logo span{font-size:9px;font-weight:500;color:var(--text3);letter-spacing:1px;display:block;margin-top:2px}
+nav .logo .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+nav ul{list-style:none;padding:16px 0}
+nav li{position:relative}
+nav a{display:flex;align-items:center;gap:12px;padding:10px 24px;font-size:13px;font-weight:500;color:var(--text2);
+  text-decoration:none;transition:all .2s;border-left:3px solid transparent}
+nav a:hover{color:var(--text);background:var(--bg3)}
+nav a.active{color:var(--cyan);border-left-color:var(--cyan);background:var(--cyan-glow)}
+nav a .num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text3);min-width:24px}
+nav a.sub{padding-left:60px;font-size:12px;color:var(--text3)}
+nav a.sub:hover{color:var(--text2)}
+nav a.sub.active{color:var(--cyan)}
+
+/* ── Mobile nav toggle ── */
+#navToggle{display:none;position:fixed;top:16px;left:16px;z-index:200;width:44px;height:44px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;
+  color:var(--text);font-size:20px;align-items:center;justify-content:center}
+#navOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99}
+
+/* ── Main content ── */
+main{margin-left:280px;max-width:900px;padding:48px 60px 120px}
+
+/* ── Section headers ── */
+.section-header{margin:64px 0 32px;position:relative}
+.section-header:first-child{margin-top:0}
+.section-number{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.section-number::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border2),transparent)}
+h1{font-size:clamp(28px,4vw,40px);font-weight:800;color:var(--text);line-height:1.2;letter-spacing:-.5px}
+h2{font-size:22px;font-weight:700;color:var(--text);margin:40px 0 16px;display:flex;align-items:center;gap:10px}
+h2::before{content:'';width:4px;height:20px;background:var(--cyan);border-radius:2px;flex-shrink:0}
+h3{font-size:17px;font-weight:600;color:var(--text);margin:28px 0 12px}
+p{color:var(--text2);margin-bottom:16px;font-size:15px;font-weight:400}
+p strong{color:var(--text);font-weight:600}
+
+/* ── Callout boxes ── */
+.callout{border-radius:var(--radius);padding:20px 24px;margin:20px 0;font-size:14px;line-height:1.6;
+  border:1px solid;position:relative;overflow:hidden}
+.callout::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+.callout.info{background:var(--cyan-glow);border-color:rgba(0,240,255,.2);color:var(--text2)}
+.callout.info::before{background:var(--cyan)}
+.callout.warn{background:var(--orange-glow);border-color:rgba(255,107,53,.2);color:var(--text2)}
+.callout.warn::before{background:var(--orange)}
+.callout.success{background:var(--green-glow);border-color:rgba(0,255,157,.2);color:var(--text2)}
+.callout.success::before{background:var(--green)}
+.callout .label{font-family:var(--mono);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.callout.info .label{color:var(--cyan)}
+.callout.warn .label{color:var(--orange)}
+.callout.success .label{color:var(--green)}
+
+/* ── Code blocks ── */
+pre{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;
+  overflow-x:auto;margin:16px 0;position:relative}
+pre code{font-family:var(--mono);font-size:13px;line-height:1.8;color:var(--green);white-space:pre}
+pre .copy-btn{position:absolute;top:12px;right:12px;background:var(--bg4);border:1px solid var(--border2);
+  border-radius:6px;padding:6px 12px;font-family:var(--mono);font-size:11px;color:var(--text3);cursor:pointer;
+  transition:all .2s;opacity:0}
+pre:hover .copy-btn{opacity:1}
+pre .copy-btn:hover{color:var(--cyan);border-color:var(--cyan)}
+code:not(pre code){font-family:var(--mono);font-size:13px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:4px;padding:2px 7px;color:var(--cyan)}
+
+/* ── Tables ── */
+.table-wrap{overflow-x:auto;margin:16px 0;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--bg3);font-weight:600;color:var(--text);text-align:left;padding:14px 16px;
+  font-size:12px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border2)}
+td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+
+/* ── Steps ── */
+.steps{counter-reset:step;margin:16px 0}
+.step{position:relative;padding:16px 16px 16px 64px;margin:0;border-left:2px solid var(--border);
+  margin-left:20px;counter-increment:step}
+.step::before{content:counter(step);position:absolute;left:-17px;top:14px;width:32px;height:32px;
+  background:var(--bg);border:2px solid var(--cyan);border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan)}
+.step.done::before{background:var(--cyan);color:var(--bg);border-color:var(--cyan)}
+.step:last-child{border-left-color:transparent}
+.step p{margin:0;font-size:14px;color:var(--text2)}
+.step p:first-child{color:var(--text);font-weight:500}
+
+/* ── Shopping cards ── */
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin:16px 0}
+.shop-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:20px;
+  transition:all .3s;position:relative;overflow:hidden}
+.shop-card:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,240,255,.08)}
+.shop-card .tag{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--cyan);margin-bottom:8px}
+.shop-card h4{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+.shop-card .price{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--green);margin:8px 0}
+.shop-card .desc{font-size:13px;color:var(--text3);line-height:1.5}
+.shop-card.recommended{border-color:var(--cyan)}
+.shop-card.recommended::after{content:'RECOMMENDED';position:absolute;top:12px;right:-28px;
+  background:var(--cyan);color:var(--bg);font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;
+  padding:4px 32px;transform:rotate(45deg)}
+
+/* ── Cost calculator ── */
+.calc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin:24px 0}
+.calc h4{font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.calc h4 .icon{color:var(--cyan)}
+.calc-row{display:flex;align-items:center;justify-content:space-between;margin:12px 0;gap:16px;flex-wrap:wrap}
+.calc-row label{font-size:14px;color:var(--text2);font-weight:500;min-width:200px}
+.calc-row select,.calc-row input[type=range]{background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:8px 12px;font-family:var(--font);font-size:14px;cursor:pointer}
+.calc-row select:focus{outline:none;border-color:var(--cyan)}
+input[type=range]{-webkit-appearance:none;height:6px;background:var(--bg4);border-radius:3px;border:none;padding:0;width:200px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--cyan);cursor:pointer;box-shadow:0 0 8px var(--cyan)}
+.calc-result{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:grid;
+  grid-template-columns:repeat(3,1fr);gap:16px}
+.calc-result .stat{text-align:center}
+.calc-result .stat .val{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--green)}
+.calc-result .stat .lbl{font-size:12px;color:var(--text3);margin-top:4px}
+
+/* ── Checklist ── */
+.checklist{margin:16px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:var(--radius-sm);
+  transition:background .2s;cursor:pointer}
+.check-item:hover{background:var(--bg3)}
+.check-item input{display:none}
+.check-item .box{width:22px;height:22px;border:2px solid var(--border2);border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px}
+.check-item input:checked~.box{background:var(--cyan);border-color:var(--cyan)}
+.check-item input:checked~.box::after{content:'✓';color:var(--bg);font-size:13px;font-weight:700}
+.check-item input:checked~.text{color:var(--text3);text-decoration:line-through}
+.check-item .text{font-size:14px;color:var(--text2);line-height:1.5}
+
+/* ── Architecture diagram ── */
+.arch{display:flex;align-items:center;gap:0;margin:28px 0;flex-wrap:wrap;justify-content:center}
+.arch-node{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;
+  text-align:center;min-width:140px;position:relative}
+.arch-node .icon{font-size:28px;margin-bottom:6px}
+.arch-node .name{font-size:13px;font-weight:600;color:var(--text)}
+.arch-node .sub{font-size:11px;color:var(--text3);margin-top:2px}
+.arch-arrow{font-size:24px;color:var(--cyan);padding:0 8px;font-family:var(--mono)}
+
+/* ── Phase tabs ── */
+.phase-tabs{display:flex;gap:4px;margin:24px 0 0;border-bottom:2px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.phase-tabs::-webkit-scrollbar{display:none}
+.phase-tab{padding:12px 20px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .2s;
+  background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font)}
+.phase-tab:hover{color:var(--text2)}
+.phase-tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.phase-content{display:none;padding:24px 0}
+.phase-content.active{display:block}
+
+/* ── Total cost bar ── */
+.cost-bar{display:flex;gap:0;border-radius:var(--radius);overflow:hidden;height:40px;margin:16px 0}
+.cost-bar .seg{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;
+  font-weight:600;color:var(--bg);transition:flex .3s}
+
+/* ── Animations ── */
+.reveal{opacity:0;transform:translateY(24px);transition:all .6s cubic-bezier(.4,0,.2,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  nav{transform:translateX(-100%)}
+  nav.open{transform:translateX(0)}
+  #navToggle{display:flex}
+  #navOverlay.open{display:block}
+  main{margin-left:0;padding:72px 24px 120px}
+}
+@media(max-width:600px){
+  .calc-result{grid-template-columns:1fr}
+  .arch{flex-direction:column}
+  .arch-arrow{transform:rotate(90deg)}
+  .shop-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<button id="navToggle" aria-label="Toggle navigation">☰</button>
+<div id="navOverlay"></div>
+
+<nav id="nav">
+  <div class="logo">
+    <div class="dot"></div>
+    <div>HUP AI<span>DIY Build Guide</span></div>
+  </div>
+  <ul id="navList"></ul>
+</nav>
+
+<main id="main">
+
+<!-- ═══════════ SECTION 0: HERO ═══════════ -->
+<section id="s-overview" class="section-header reveal">
+  <div class="section-number">System Overview</div>
+  <h1>Build Your Own AI-Powered<br>Home Management System</h1>
+  <p style="font-size:17px;margin-top:16px;color:var(--text2)">An end-to-end guide to building a self-hosted, camera-based AI system that scans your rooms, detects messes and hazards, and pushes actionable tasks to your phone. Inspired by <a href="https://withhup.com" target="_blank" style="color:var(--cyan)">Hup AI</a> — built from scratch, no subscription, you own everything.</p>
+
+  <div class="arch" style="margin-top:36px">
+    <div class="arch-node"><div class="icon">📷</div><div class="name">Cameras</div><div class="sub">Wyze Cam v3 (x3)</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node"><div class="icon">🖥️</div><div class="name">Server</div><div class="sub">Beelink Mini PC</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node"><div class="icon">🧠</div><div class="name">AI Analysis</div><div class="sub">Claude Vision API</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node"><div class="icon">📱</div><div class="name">Your Phone</div><div class="sub">Push Notifications</div></div>
+  </div>
+
+  <div class="callout info" style="margin-top:28px">
+    <div class="label">How It Works</div>
+    Cameras capture snapshots every 15-60 minutes. Each image is sent to Claude's vision model with a room-specific prompt. The AI returns structured tasks: "Put the two plates from the counter into the dishwasher." Tasks are pushed to your phone and logged for weekly pattern reports.
+  </div>
+</section>
+
+<!-- ═══════════ SECTION 1: SHOPPING ═══════════ -->
+<section id="s-shopping" class="section-header reveal">
+  <div class="section-number">01 — Shopping List</div>
+  <h1>What to Buy</h1>
+  <p>Order everything in a single Amazon cart. Two-day delivery. You will be up and running this week.</p>
+
+  <h2>Cameras</h2>
+  <div class="shop-grid">
+    <div class="shop-card recommended">
+      <div class="tag">Camera</div>
+      <h4>Wyze Cam v3</h4>
+      <div class="price">$28 <span style="font-size:13px;color:var(--text3)">× 3 = $84</span></div>
+      <div class="desc">1080p, color night vision, IP65 weather rated, RTSP firmware support. The proven choice — cheap, reliable, battle-tested.</div>
+    </div>
+    <div class="shop-card">
+      <div class="tag">Alternative</div>
+      <h4>Wyze Cam v4</h4>
+      <div class="price">$36 <span style="font-size:13px;color:var(--text3)">× 3 = $108</span></div>
+      <div class="desc">2.5K resolution for sharper AI analysis. Newer model. Costs slightly more but gives higher fidelity images.</div>
+    </div>
+    <div class="shop-card">
+      <div class="tag">Accessory</div>
+      <h4>32GB MicroSD Cards</h4>
+      <div class="price">$8 <span style="font-size:13px;color:var(--text3)">× 3 = $24</span></div>
+      <div class="desc">SanDisk or Samsung. For local backup recording on each camera. Also needed for RTSP firmware flash.</div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="label">WiFi Warning</div>
+    Wyze cameras only connect to <strong>2.4GHz WiFi</strong>. They will NOT connect to 5GHz networks. Confirm your router broadcasts a 2.4GHz band before ordering. Most dual-band routers do this by default.
+  </div>
+
+  <h2>Server</h2>
+  <div class="shop-grid">
+    <div class="shop-card recommended">
+      <div class="tag">Server</div>
+      <h4>Beelink Mini S12 Pro</h4>
+      <div class="price">$170</div>
+      <div class="desc">Intel N100, 16GB RAM, 500GB SSD. Silent, 6W power draw, runs 24/7. Overkill specs = room for Home Assistant and other projects later.</div>
+    </div>
+    <div class="shop-card">
+      <div class="tag">Budget Option</div>
+      <h4>Raspberry Pi 5 Kit</h4>
+      <div class="price">$117</div>
+      <div class="desc">8GB RAM model + case + PSU + 128GB SD card. Cheaper but needs separate purchases and runs ARM Linux.</div>
+    </div>
+  </div>
+
+  <h2>Notifications</h2>
+  <div class="shop-grid">
+    <div class="shop-card recommended">
+      <div class="tag">Notifications</div>
+      <h4>Pushover App</h4>
+      <div class="price">$5 <span style="font-size:13px;color:var(--text3)">one-time</span></div>
+      <div class="desc">Instant push notifications. No subscription. Simple API. Available on iOS and Android.</div>
+    </div>
+    <div class="shop-card">
+      <div class="tag">Free Alternative</div>
+      <h4>Slack DM</h4>
+      <div class="price">Free</div>
+      <div class="desc">Send notifications to yourself via a Slack webhook. Works if you already live in Slack.</div>
+    </div>
+  </div>
+
+  <h2>API Access</h2>
+  <div class="shop-grid">
+    <div class="shop-card">
+      <div class="tag">Required</div>
+      <h4>Anthropic API Key</h4>
+      <div class="price">$5-15<span style="font-size:13px;color:var(--text3)">/month</span></div>
+      <div class="desc">Pay-per-use. Claude Sonnet vision analyzes images at ~$0.01-0.03 each. Sign up at console.anthropic.com.</div>
+    </div>
+  </div>
+
+  <!-- Cost calculator -->
+  <div class="calc">
+    <h4><span class="icon">⚡</span> Cost Calculator</h4>
+    <div class="calc-row">
+      <label>Server choice</label>
+      <select id="calcServer" onchange="updateCalc()">
+        <option value="170">Beelink Mini S12 Pro ($170)</option>
+        <option value="117">Raspberry Pi 5 Kit ($117)</option>
+      </select>
+    </div>
+    <div class="calc-row">
+      <label>Camera choice</label>
+      <select id="calcCamera" onchange="updateCalc()">
+        <option value="84">Wyze Cam v3 × 3 ($84)</option>
+        <option value="108">Wyze Cam v4 × 3 ($108)</option>
+      </select>
+    </div>
+    <div class="calc-row">
+      <label>Scan interval: <strong id="intervalLabel">15 min</strong></label>
+      <input type="range" id="calcInterval" min="15" max="120" step="15" value="15" oninput="updateCalc()">
+    </div>
+    <div class="calc-result">
+      <div class="stat"><div class="val" id="calcHardware">$283</div><div class="lbl">Hardware (one-time)</div></div>
+      <div class="stat"><div class="val" id="calcMonthly">$60-150</div><div class="lbl">Monthly API</div></div>
+      <div class="stat"><div class="val" id="calcDaily">180</div><div class="lbl">Scans / day</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION 2: HARDWARE SETUP ═══════════ -->
+<section id="s-hardware" class="section-header reveal">
+  <div class="section-number">02 — Hardware Setup</div>
+  <h1>Cameras & Server</h1>
+
+  <div class="phase-tabs">
+    <button class="phase-tab active" onclick="switchPhase(this,'hw')">Camera Placement</button>
+    <button class="phase-tab" onclick="switchPhase(this,'hw')">Wyze App Setup</button>
+    <button class="phase-tab" onclick="switchPhase(this,'hw')">RTSP Firmware</button>
+    <button class="phase-tab" onclick="switchPhase(this,'hw')">Server Setup</button>
+    <button class="phase-tab" onclick="switchPhase(this,'hw')">Verify Connectivity</button>
+  </div>
+
+  <div class="phase-content active" data-group="hw">
+    <h3>Camera Placement Guide</h3>
+    <p><strong>Kitchen:</strong> Mount under a cabinet or on top of the refrigerator, angled to capture counter surfaces, the stove, and the sink. The AI needs to see where dishes pile up, food gets left out, and whether the stove appears active.</p>
+    <p><strong>Living Room:</strong> Place on a bookshelf, entertainment center, or high corner. Angle to capture the main seating area, coffee table, and floor space. Goal: detect clutter, items on the floor, cups/plates left out.</p>
+    <p><strong>Office / Entryway:</strong> Desk-level for office, shelf-height for entry. Goal: mail pileup, packages, shoes/coats, desk clutter, cables.</p>
+    <div class="callout info">
+      <div class="label">Pro Tip</div>
+      Take a photo from each camera angle with your phone before mounting permanently. If you cannot clearly see the problem areas in the phone photo, the camera will not capture them either.
+    </div>
+  </div>
+
+  <div class="phase-content" data-group="hw">
+    <h3>Initial Camera Setup via Wyze App</h3>
+    <div class="steps">
+      <div class="step"><p>Download the Wyze app (iOS/Android) and create an account.</p></div>
+      <div class="step"><p>Plug in your first camera. Wait 20 seconds until the status light flashes red.</p></div>
+      <div class="step"><p>Press and hold the SETUP button on the bottom for 3 seconds until you hear a voice prompt.</p></div>
+      <div class="step"><p>Follow in-app instructions to connect the camera to your <strong>2.4GHz WiFi</strong>.</p></div>
+      <div class="step"><p>Name each camera (Kitchen, Living Room, Office) for easy identification.</p></div>
+      <div class="step"><p>Repeat for all three cameras. Verify live feeds work in the app.</p></div>
+    </div>
+    <div class="callout warn">
+      <div class="label">Critical</div>
+      Write down each camera's <strong>IP address</strong>. Open your router admin panel (usually 192.168.1.1), find connected devices, and note IPs. Set <strong>static DHCP reservations</strong> so they don't change on reboot. You will need these IPs for software configuration.
+    </div>
+  </div>
+
+  <div class="phase-content" data-group="hw">
+    <h3>Flash RTSP Firmware</h3>
+    <p>RTSP firmware lets you pull video/snapshots directly from cameras over your local network, bypassing Wyze cloud.</p>
+    <div class="steps">
+      <div class="step"><p>Go to <code>support.wyze.com</code> and download the RTSP firmware for Wyze Cam v3.</p></div>
+      <div class="step"><p>Format a 32GB microSD card as FAT32.</p></div>
+      <div class="step"><p>Copy the firmware file (<code>demo_wcv3.bin</code>) to the <strong>root</strong> of the SD card. Not in a folder.</p></div>
+      <div class="step"><p>Power off the camera (unplug it). Insert the microSD card.</p></div>
+      <div class="step"><p>While holding the SETUP button, plug the camera back in. Hold for 3-6 seconds.</p></div>
+      <div class="step"><p>LED turns solid blue, then flashes. Wait 3-4 minutes for flash to complete. Camera reboots.</p></div>
+      <div class="step"><p>In Wyze app → Camera Settings → Advanced → Enable RTSP.</p></div>
+      <div class="step"><p>Note the RTSP URL displayed (format: <code>rtsp://CAMERA_IP/live</code>). Repeat for all cameras.</p></div>
+    </div>
+  </div>
+
+  <div class="phase-content" data-group="hw">
+    <h3>Server Setup</h3>
+    <p>The Beelink arrives with Windows 11. You have two paths:</p>
+    <h3>Option A: Install Ubuntu (Recommended)</h3>
+    <div class="steps">
+      <div class="step"><p>Download Ubuntu Desktop 24.04 LTS from <code>ubuntu.com/download</code>.</p></div>
+      <div class="step"><p>Flash it to a USB drive using Rufus (Windows) or Balena Etcher (Mac).</p></div>
+      <div class="step"><p>Plug USB into Beelink. Power on, press F7 repeatedly for boot menu.</p></div>
+      <div class="step"><p>Select USB drive. Choose "Erase disk and install Ubuntu."</p></div>
+      <div class="step"><p>Set username, password, hostname (e.g., "hup-server").</p></div>
+      <div class="step"><p>Connect to WiFi or ethernet. Open Terminal:</p></div>
+    </div>
+    <pre><code>sudo apt update && sudo apt upgrade -y</code></pre>
+    <h3>Option B: Keep Windows</h3>
+    <p>The scripts work on Windows too. Install Python 3.11+ from python.org and ffmpeg from ffmpeg.org (add to PATH). Setup script won't work, so install dependencies manually.</p>
+  </div>
+
+  <div class="phase-content" data-group="hw">
+    <h3>Verify Camera Connectivity</h3>
+    <p>Confirm your server can reach each camera on the network before installing software.</p>
+    <pre><code>ping 192.168.1.101    # Kitchen camera IP
+ping 192.168.1.102    # Living room camera IP
+ping 192.168.1.103    # Office camera IP</code></pre>
+    <p>If pings succeed, test a snapshot grab:</p>
+    <pre><code>sudo apt install ffmpeg
+
+ffmpeg -y -rtsp_transport tcp -i rtsp://192.168.1.101/live \
+  -frames:v 1 -q:v 2 test_kitchen.jpg</code></pre>
+    <p>If this produces a <code>test_kitchen.jpg</code>, open it and verify the angle. Repeat for each camera.</p>
+    <div class="callout success">
+      <div class="label">Checkpoint</div>
+      If all three cameras produce valid JPEG files, your hardware layer is complete. You are ready for software.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION 3: SOFTWARE ═══════════ -->
+<section id="s-software" class="section-header reveal">
+  <div class="section-number">03 — Software Installation</div>
+  <h1>Deploy the Code</h1>
+
+  <h2>Get Your API Keys</h2>
+  <h3>Anthropic API Key</h3>
+  <div class="steps">
+    <div class="step"><p>Go to <code>console.anthropic.com</code>. Create an account or sign in.</p></div>
+    <div class="step"><p>Go to Settings → API Keys → "Create Key." Name it "HUP AI."</p></div>
+    <div class="step"><p>Copy the key (starts with <code>sk-ant-...</code>). Save it securely. Cannot view it again.</p></div>
+    <div class="step"><p>Settings → Billing → Add payment method. Load $20 to start.</p></div>
+  </div>
+
+  <h3>Pushover Keys</h3>
+  <div class="steps">
+    <div class="step"><p>Download Pushover app on your phone ($5 one-time).</p></div>
+    <div class="step"><p>Go to <code>pushover.net</code>, create account. Copy your <strong>User Key</strong> from the dashboard.</p></div>
+    <div class="step"><p>Click "Create Application/API Token." Name it "HUP AI." Copy the <strong>API Token</strong>.</p></div>
+  </div>
+
+  <h2>Install & Configure</h2>
+  <p>Transfer the project archive to your server and run setup:</p>
+  <pre><code>mkdir -p ~/hup_project
+tar -xzf diy-hup-ai.tar.gz -C ~/hup_project/
+cd ~/hup_project
+chmod +x setup.sh
+./setup.sh</code></pre>
+
+  <p>The setup script installs Python, ffmpeg, creates a virtual environment, installs packages, creates data directories, and sets up a systemd service for auto-start.</p>
+
+  <h2>Configure Settings</h2>
+  <pre><code>nano ~/hup_project/config.py</code></pre>
+  <p>Update these critical fields:</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>Setting</th><th>What to Change</th></tr>
+      <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Your <code>sk-ant-...</code> key</td></tr>
+      <tr><td><code>CAMERAS → url</code></td><td>Each camera's actual IP address</td></tr>
+      <tr><td><code>PUSHOVER_USER_KEY</code></td><td>Your Pushover user key</td></tr>
+      <tr><td><code>PUSHOVER_API_TOKEN</code></td><td>Your Pushover app token</td></tr>
+      <tr><td><code>SNAPSHOT_INTERVAL_MINUTES</code></td><td>15, 30, or 60 (default: 15)</td></tr>
+      <tr><td><code>ACTIVE_HOURS_START / END</code></td><td>When to scan (default: 7AM-10PM)</td></tr>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <div class="label">Security</div>
+    For production use, set API keys as environment variables instead of hardcoding. The config supports this: set <code>ANTHROPIC_API_KEY</code> in your environment and remove the fallback string from config.py.
+  </div>
+</section>
+
+<!-- ═══════════ SECTION 4: TESTING ═══════════ -->
+<section id="s-testing" class="section-header reveal">
+  <div class="section-number">04 — Testing</div>
+  <h1>Verify Each Layer</h1>
+  <p>Test independently before running the full system. Do not skip this.</p>
+
+  <h2>Test Camera Capture</h2>
+  <pre><code>cd ~/hup_project
+source ~/hup_venv/bin/activate
+python hup.py test-capture</code></pre>
+  <p>Expected: all three cameras show <code>[OK]</code> with file paths and sizes.</p>
+
+  <h2>Test Notifications</h2>
+  <pre><code>python hup.py test-notify</code></pre>
+  <p>Expected: you receive a test push notification on your phone within seconds.</p>
+
+  <h2>Test Full Scan</h2>
+  <pre><code>python hup.py scan</code></pre>
+  <p>This runs the complete pipeline: capture → AI analysis → database save → push notification. Takes 30-60 seconds.</p>
+  <pre><code>==================================================
+[SCAN] Starting at 02:15 PM
+==================================================
+
+[1/4] Capturing snapshots...
+[OK] Kitchen: captured kitchen_20260319_141500.jpg (145 KB)
+[OK] Living Room: captured living_room_20260319_141501.jpg (132 KB)
+[OK] Office / Entryway: captured office_20260319_141502.jpg (128 KB)
+  Captured: 3/3 cameras
+
+[2/4] Analyzing with AI...
+[AI] Kitchen: needs_attention | 3 tasks | tokens: 1842in/286out
+[AI] Living Room: clean | 0 tasks | tokens: 1756in/142out
+[AI] Office: needs_attention | 2 tasks | tokens: 1801in/231out
+
+[3/4] Saving to database...
+  Saved.
+
+[4/4] Sending notifications...
+[PUSHOVER] Sent: Home Scan Complete</code></pre>
+
+  <div class="callout success">
+    <div class="label">Checkpoint</div>
+    If you received a notification with room tasks, everything works. You are ready to go live.
+  </div>
+</section>
+
+<!-- ═══════════ SECTION 5: GO LIVE ═══════════ -->
+<section id="s-live" class="section-header reveal">
+  <div class="section-number">05 — Go Live</div>
+  <h1>Run It 24/7</h1>
+
+  <h2>Start the Daemon</h2>
+  <pre><code>python hup.py daemon</code></pre>
+  <p>The daemon scans continuously at your configured interval, handles active hours, sends morning/evening digests, and cleans up old snapshots automatically.</p>
+
+  <h2>Auto-Start on Boot</h2>
+  <p>Make it survive reboots and power outages:</p>
+  <div class="steps">
+    <div class="step"><p>Edit the systemd service with your API keys:</p></div>
+  </div>
+  <pre><code>sudo nano /etc/systemd/system/hup-ai.service
+
+# Find the Environment lines and set:
+Environment=ANTHROPIC_API_KEY=sk-ant-api03-your-actual-key
+Environment=PUSHOVER_USER_KEY=your-pushover-user-key
+Environment=PUSHOVER_API_TOKEN=your-pushover-app-token</code></pre>
+  <div class="steps" style="margin-top:0">
+    <div class="step"><p>Enable and start:</p></div>
+  </div>
+  <pre><code>sudo systemctl daemon-reload
+sudo systemctl enable hup-ai      # Auto-start on boot
+sudo systemctl start hup-ai       # Start now
+sudo systemctl status hup-ai      # Verify running</code></pre>
+
+  <h2>Management Commands</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Command</th><th>What It Does</th></tr>
+      <tr><td><code>python hup.py status</code></td><td>Today's scans, tasks, and weekly patterns</td></tr>
+      <tr><td><code>python hup.py digest</code></td><td>Trigger a daily summary notification</td></tr>
+      <tr><td><code>python hup.py weekly</code></td><td>Weekly pattern report</td></tr>
+      <tr><td><code>python hup.py scan</code></td><td>Force a one-off scan right now</td></tr>
+      <tr><td><code>sudo systemctl stop hup-ai</code></td><td>Stop the background daemon</td></tr>
+      <tr><td><code>sudo systemctl restart hup-ai</code></td><td>Restart after config changes</td></tr>
+      <tr><td><code>journalctl -u hup-ai -f</code></td><td>Watch live logs</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION 6: TROUBLESHOOTING ═══════════ -->
+<section id="s-troubleshoot" class="section-header reveal">
+  <div class="section-number">06 — Troubleshooting</div>
+  <h1>Fix Common Issues</h1>
+
+  <h2>Camera Issues</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Problem</th><th>Cause</th><th>Fix</th></tr>
+      <tr><td>FAILED in test</td><td>Wrong IP or RTSP off</td><td>Verify IP in router admin. Re-check RTSP toggle in Wyze app.</td></tr>
+      <tr><td>TIMEOUT</td><td>Network issue or cam offline</td><td>Power cycle camera. Try <code>-timeout 30</code> in ffmpeg.</td></tr>
+      <tr><td>Black image</td><td>Night mode or bad angle</td><td>Check night vision settings. Ensure ambient light.</td></tr>
+      <tr><td>WiFi drops</td><td>2.4GHz interference</td><td>Move router closer. Add WiFi extender. Set static channel.</td></tr>
+    </table>
+  </div>
+
+  <h2>API Issues</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Problem</th><th>Cause</th><th>Fix</th></tr>
+      <tr><td>401 Unauthorized</td><td>Bad API key</td><td>Regenerate at console.anthropic.com. Update config.py.</td></tr>
+      <tr><td>429 Rate Limited</td><td>Too many requests</td><td>Increase scan interval in config.py.</td></tr>
+      <tr><td>JSON parse error</td><td>Malformed AI response</td><td>Rare. Check logs. Usually resolves next cycle.</td></tr>
+      <tr><td>High costs</td><td>Interval too frequent</td><td>Switch to 30min or 60min interval.</td></tr>
+    </table>
+  </div>
+
+  <h2>Notification Issues</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Problem</th><th>Cause</th><th>Fix</th></tr>
+      <tr><td>No notifications</td><td>Wrong keys or app not installed</td><td>Run <code>test-notify</code>. Verify keys. Reinstall app.</td></tr>
+      <tr><td>Delayed</td><td>Phone in DND or battery saver</td><td>Whitelist Pushover in phone settings.</td></tr>
+      <tr><td>Too many</td><td>Every scan sends full report</td><td>Set <code>NOTIFY_IMMEDIATELY_ON_HIGH = False</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION 7: UPGRADES ═══════════ -->
+<section id="s-upgrades" class="section-header reveal">
+  <div class="section-number">07 — Future Upgrades</div>
+  <h1>Level Up</h1>
+  <p>The base system is intentionally simple. After living with it for a week or two, here are the high-value upgrades ranked by impact.</p>
+
+  <div class="shop-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+    <div class="shop-card">
+      <div class="tag" style="color:var(--green)">High Impact</div>
+      <h4>Motion-Triggered Scanning</h4>
+      <div class="desc">Only scan when cameras detect motion. Cuts API costs 60-80% while increasing responsiveness. Most cameras support motion webhooks.</div>
+    </div>
+    <div class="shop-card">
+      <div class="tag" style="color:var(--green)">High Impact</div>
+      <h4>Task Completion Tracking</h4>
+      <div class="desc">Reply "done" to notifications to mark tasks complete. Track completion rates over time. Turns passive scanner into accountability tool.</div>
+    </div>
+    <div class="shop-card">
+      <div class="tag" style="color:var(--orange)">Medium Impact</div>
+      <h4>Before / After Comparison</h4>
+      <div class="desc">After a task is marked done, capture a new snapshot and have AI verify it was completed.</div>
+    </div>
+    <div class="shop-card">
+      <div class="tag" style="color:var(--orange)">Medium Impact</div>
+      <h4>Home Assistant Integration</h4>
+      <div class="desc">Tie AI analysis into automations: lights, smart plugs, room-specific alerts via HA on the same Beelink.</div>
+    </div>
+    <div class="shop-card">
+      <div class="tag" style="color:var(--purple)">Nice to Have</div>
+      <h4>Voice Announcements</h4>
+      <div class="desc">Bluetooth speaker near each camera. TTS reads tasks aloud when high-priority items detected.</div>
+    </div>
+    <div class="shop-card">
+      <div class="tag" style="color:var(--purple)">Nice to Have</div>
+      <h4>Multi-Person Assignment</h4>
+      <div class="desc">Assign rooms/categories to different household members. Route notifications per person.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION 8: CHECKLIST ═══════════ -->
+<section id="s-checklist" class="section-header reveal">
+  <div class="section-number">08 — Master Checklist</div>
+  <h1>Track Your Progress</h1>
+  <p>Check off each step as you complete it. Progress is saved locally in your browser.</p>
+
+  <div class="checklist" id="checklist">
+    <label class="check-item"><input type="checkbox" data-key="c1"><span class="box"></span><span class="text">Order cameras, server, and microSD cards from Amazon</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c2"><span class="box"></span><span class="text">Download Pushover app on phone ($5)</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c3"><span class="box"></span><span class="text">Sign up for Anthropic API key at console.anthropic.com</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c4"><span class="box"></span><span class="text">Add $20 to Anthropic billing account</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c5"><span class="box"></span><span class="text">Hardware arrives — unbox everything</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c6"><span class="box"></span><span class="text">Place cameras in kitchen, living room, office</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c7"><span class="box"></span><span class="text">Set up cameras via Wyze app (connect to 2.4GHz WiFi)</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c8"><span class="box"></span><span class="text">Record camera IP addresses from router admin</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c9"><span class="box"></span><span class="text">Set static DHCP reservations for each camera</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c10"><span class="box"></span><span class="text">Flash RTSP firmware on all three cameras</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c11"><span class="box"></span><span class="text">Enable RTSP in Wyze app for each camera</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c12"><span class="box"></span><span class="text">Set up server (install Ubuntu or configure Windows)</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c13"><span class="box"></span><span class="text">Verify server can ping all camera IPs</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c14"><span class="box"></span><span class="text">Test ffmpeg snapshot from each camera</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c15"><span class="box"></span><span class="text">Deploy project code to ~/hup_project</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c16"><span class="box"></span><span class="text">Run setup.sh</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c17"><span class="box"></span><span class="text">Edit config.py with camera IPs and API keys</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c18"><span class="box"></span><span class="text">python hup.py test-capture — all cameras OK</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c19"><span class="box"></span><span class="text">python hup.py test-notify — notification received</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c20"><span class="box"></span><span class="text">python hup.py scan — full pipeline works, tasks on phone</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c21"><span class="box"></span><span class="text">Configure systemd service with API keys</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c22"><span class="box"></span><span class="text">sudo systemctl enable hup-ai && sudo systemctl start hup-ai</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c23"><span class="box"></span><span class="text">Verify daemon running: sudo systemctl status hup-ai</span></label>
+    <label class="check-item"><input type="checkbox" data-key="c24"><span class="box"></span><span class="text">System is live and scanning automatically 🎉</span></label>
+  </div>
+  <div style="margin-top:16px;font-family:var(--mono);font-size:13px;color:var(--text3)">
+    Progress: <span id="checkProgress">0</span> / 24 complete
+  </div>
+</section>
+
+<!-- ═══════════ SECTION 9: FILES ═══════════ -->
+<section id="s-files" class="section-header reveal">
+  <div class="section-number">09 — Project Files</div>
+  <h1>File Reference</h1>
+  <div class="table-wrap">
+    <table>
+      <tr><th>File</th><th>Purpose</th><th>When to Edit</th></tr>
+      <tr><td><code>config.py</code></td><td>All settings: camera IPs, API keys, schedules</td><td>Initial setup + any setting changes</td></tr>
+      <tr><td><code>hup.py</code></td><td>Main runner (scan, daemon, digest, status)</td><td>Rarely. Only to add commands.</td></tr>
+      <tr><td><code>capture.py</code></td><td>Grabs JPEG frames via ffmpeg</td><td>Only if switching camera systems</td></tr>
+      <tr><td><code>analyze.py</code></td><td>Claude Vision API integration + JSON parsing</td><td>To modify AI prompts or categories</td></tr>
+      <tr><td><code>notify.py</code></td><td>Push notifications (Pushover/Slack/Twilio)</td><td>To add new notification channels</td></tr>
+      <tr><td><code>tasks_db.py</code></td><td>SQLite task tracking + pattern analysis</td><td>To add new queries or reports</td></tr>
+      <tr><td><code>setup.sh</code></td><td>One-time server setup</td><td>Only during initial install</td></tr>
+      <tr><td><code>requirements.txt</code></td><td>Python dependencies</td><td>If adding new Python libraries</td></tr>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ── Navigation builder ──
+const sections = [
+  { id:'s-overview', label:'Overview', num:'00' },
+  { id:'s-shopping', label:'Shopping List', num:'01' },
+  { id:'s-hardware', label:'Hardware Setup', num:'02' },
+  { id:'s-software', label:'Software Install', num:'03' },
+  { id:'s-testing', label:'Testing', num:'04' },
+  { id:'s-live', label:'Go Live', num:'05' },
+  { id:'s-troubleshoot', label:'Troubleshooting', num:'06' },
+  { id:'s-upgrades', label:'Future Upgrades', num:'07' },
+  { id:'s-checklist', label:'Master Checklist', num:'08' },
+  { id:'s-files', label:'File Reference', num:'09' },
+];
+const navList = document.getElementById('navList');
+sections.forEach(s => {
+  const li = document.createElement('li');
+  li.innerHTML = `<a href="#${s.id}" data-section="${s.id}"><span class="num">${s.num}</span>${s.label}</a>`;
+  navList.appendChild(li);
+});
+
+// ── Scroll spy ──
+const navLinks = document.querySelectorAll('nav a[data-section]');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`nav a[data-section="${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -60% 0px' });
+document.querySelectorAll('section[id]').forEach(s => observer.observe(s));
+
+// ── Scroll progress ──
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+  document.getElementById('progress').style.width = pct + '%';
+});
+
+// ── Reveal on scroll ──
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+// ── Phase tabs ──
+function switchPhase(btn, group) {
+  const tabs = btn.parentElement.querySelectorAll('.phase-tab');
+  const contents = document.querySelectorAll(`.phase-content[data-group="${group}"]`);
+  const idx = Array.from(tabs).indexOf(btn);
+  tabs.forEach(t => t.classList.remove('active'));
+  contents.forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  if (contents[idx]) contents[idx].classList.add('active');
+}
+
+// ── Cost calculator ──
+function updateCalc() {
+  const server = parseInt(document.getElementById('calcServer').value);
+  const camera = parseInt(document.getElementById('calcCamera').value);
+  const interval = parseInt(document.getElementById('calcInterval').value);
+  document.getElementById('intervalLabel').textContent = interval + ' min';
+  const hw = server + camera + 24 + 5; // cams + SD cards + pushover
+  const scansPerDay = Math.floor((15 * 60 / interval) * 3); // 15 active hrs × 3 cams
+  const lowCost = Math.round(scansPerDay * 0.01 * 30);
+  const highCost = Math.round(scansPerDay * 0.03 * 30);
+  document.getElementById('calcHardware').textContent = '$' + hw;
+  document.getElementById('calcMonthly').textContent = '$' + lowCost + '-' + highCost;
+  document.getElementById('calcDaily').textContent = scansPerDay;
+}
+
+// ── Copy buttons on code blocks ──
+document.querySelectorAll('pre').forEach(pre => {
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'Copy';
+  btn.onclick = () => {
+    navigator.clipboard.writeText(pre.querySelector('code').textContent);
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  };
+  pre.appendChild(btn);
+});
+
+// ── Checklist persistence ──
+const checks = document.querySelectorAll('#checklist input[type=checkbox]');
+function loadChecks() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('hup_checks') || '{}');
+    checks.forEach(c => { if (saved[c.dataset.key]) c.checked = true; });
+  } catch(e) {}
+  updateCheckProgress();
+}
+function saveChecks() {
+  const data = {};
+  checks.forEach(c => { if (c.checked) data[c.dataset.key] = true; });
+  try { localStorage.setItem('hup_checks', JSON.stringify(data)); } catch(e) {}
+  updateCheckProgress();
+}
+function updateCheckProgress() {
+  const done = Array.from(checks).filter(c => c.checked).length;
+  document.getElementById('checkProgress').textContent = done;
+}
+checks.forEach(c => c.addEventListener('change', saveChecks));
+loadChecks();
+
+// ── Mobile nav ──
+const navEl = document.getElementById('nav');
+const overlay = document.getElementById('navOverlay');
+document.getElementById('navToggle').onclick = () => {
+  navEl.classList.toggle('open');
+  overlay.classList.toggle('open');
+};
+overlay.onclick = () => {
+  navEl.classList.remove('open');
+  overlay.classList.remove('open');
+};
+navLinks.forEach(l => l.addEventListener('click', () => {
+  navEl.classList.remove('open');
+  overlay.classList.remove('open');
+}));
+
+// ── Init ──
+updateCalc();
+</script>
+</body>
+</html>
